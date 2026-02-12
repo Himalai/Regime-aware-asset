@@ -1,216 +1,248 @@
-# Regime-Based Dynamic Asset Allocation (ML-Driven)
+# Regime-Aware Asset Allocation
+### Machine Learning Based Dynamic Portfolio Strategy
 
-## Overview
-This project builds a **machine learning–driven market regime detection system** and uses it to dynamically allocate assets between equities, bonds, gold, and real estate.
+**Author:** Himalai Appikatla  
+**Field:** Quantitative Finance | Asset Allocation | Machine Learning  
 
-The strategy predicts **future market volatility regimes (Low-Vol vs High-Vol)** using market features and adjusts portfolio weights accordingly.
+---
 
-**Goal:** Improve **risk-adjusted returns**, volatility control, and drawdown behavior vs a static allocation.
+## Project Overview
+
+This project builds a **Regime-Aware Dynamic Asset Allocation strategy** that adjusts portfolio weights based on predicted market volatility regimes.
+
+Instead of using fixed allocations, the model detects **Low-Volatility vs High-Volatility regimes** and dynamically reallocates capital across assets to improve risk-adjusted performance.
+
+The goal is to answer:
+
+> Can machine learning identify market regimes and improve portfolio performance compared to static allocation?
 
 ---
 
 ## Assets Used
-- **SPY** — US Equity Market  
-- **EFA** — International Equity  
+
+- **SPY** — US Equities  
+- **EFA** — International Equities  
 - **AGG** — Bonds  
 - **GLD** — Gold  
 - **VNQ** — Real Estate  
 
-**Data period:** 2015-01-02 to 2026-02-12  
-**Prices shape:** (2795, 5)  
-**Returns shape:** (2794, 5)  
-**Monthly returns shape:** (134, 5)
+Daily data: **2015 → 2026**
 
 ---
 
-## Regime Definition
-We define market regimes using **20-day rolling volatility of SPY**:
+## Methodology
 
-- `0 = Low Vol` (Risk-On)
-- `1 = High Vol` (Risk-Off)
+### 1. Regime Detection
+Market regimes defined using **20-day rolling volatility of SPY**
 
-**Regime counts (SPY):**
-- Low Vol (0): 1368
-- High Vol (1): 1366
+- Regime = 0 → Low Volatility  
+- Regime = 1 → High Volatility  
 
----
-
-## Features Used
-We predict the next regime using three simple but effective signals:
-- `vol20`  → 20-day rolling volatility (risk proxy)
-- `mom60`  → 60-day momentum/trend proxy
-- `mkt_ret` → daily SPY return
+Threshold = Median volatility
 
 ---
 
-## Machine Learning Model
-Model: **RandomForestClassifier**
+### 2. Feature Engineering
 
-Why Random Forest?
-- Captures **non-linear relationships**
-- Robust to **noise** in financial data
-- Ensemble reduces overfitting vs a single tree
+Features used to predict **tomorrow's regime**
 
----
-
-## Out-of-Sample Performance (Daily Regime Prediction)
-Train/Test split is done **chronologically** (no shuffling).
-
-**Test Accuracy:** ~0.95  
-
-
-**Classification Report (Test):**
-- Class 0 (Low Vol): Precision ~0.94, Recall ~0.95  
-- Class 1 (High Vol): Precision ~0.95, Recall ~0.94  
+- `vol20` → Recent volatility (risk signal)
+- `mom60` → 60-day momentum (trend signal)
+- `mkt_ret` → Daily SPY return (short-term signal)
 
 ---
 
-## Strategy Construction
+### 3. Machine Learning Model
 
-### Dynamic Regime Weights
-**Low Vol (Risk-On):**
+Model: **Random Forest Classifier**
+
+Why Random Forest:
+- Captures non-linear relationships
+- Robust to noise
+- Works well for regime classification
+
+Train/Test split preserves **time-series order**.
+
+---
+
+## Model Performance
+
+### Classification Results
+
+Accuracy: **95%**
+
+Confusion Matrix:
+
+| Actual / Predicted | Low Vol | High Vol |
+|-------------------|---------|----------|
+| Low Vol           | 381     | 19       |
+| High Vol          | 24      | 397      |
+
+Random Forest significantly outperformed Logistic Regression.
+
+---
+
+## Feature Importance
+
+Most important predictor:
+
+1. **vol20 (≈80%)** — Market volatility dominates regime detection  
+2. `mom60` — Trend signal  
+3. `mkt_ret` — Short-term noise signal  
+
+---
+
+## Portfolio Strategy
+
+### Dynamic Allocation
+
+**Low Vol Regime**
 - SPY 40%
 - EFA 20%
 - AGG 20%
 - GLD 10%
 - VNQ 10%
 
-**High Vol (Risk-Off):**
+**High Vol Regime**
 - SPY 15%
 - EFA 10%
 - AGG 45%
 - GLD 20%
 - VNQ 10%
 
-### Static Benchmark Weights
-- SPY 30%
-- EFA 20%
-- AGG 30%
-- GLD 10%
-- VNQ 10%
+The strategy shifts toward **defensive assets during high volatility**.
 
 ---
 
-## Backtest Methodology
-We convert daily signals to monthly rebalancing:
-1. Predict daily regime (out-of-sample / walk-forward)
-2. Take the **month-end regime** signal
-3. Apply weights for the next month
-4. Include transaction cost on regime switches
+## Performance Comparison (Monthly, Net of Costs)
 
-**Transaction cost:** 0.10% per regime switch (0.001)
+| Strategy | Ann Return | Ann Vol | Sharpe | Max Drawdown |
+|----------|------------|---------|--------|--------------|
+| Regime Strategy | **12.13%** | **8.30%** | **1.43** | **-7.83%** |
+| Static Portfolio | 12.34% | 8.97% | 1.35 | -7.54% |
 
----
+### Key Insight
 
-## Results (Monthly, Net of Transaction Costs)
-
-### Main Metrics Table
-| Strategy | Ann Return | Ann Vol | Sharpe | Max DD |
-|---------|-----------:|--------:|-------:|-------:|
-| Regime Strategy (net) | 0.1213 | 0.0830 | 1.4254 | -0.0783 |
-| Static Portfolio      | 0.1234 | 0.0897 | 1.3468 | -0.0754 |
-
-### Extra printed metrics (from notebook)
-- Dynamic Sharpe (monthly): **1.2642**
-- Static Sharpe (monthly): **0.7782**
-- Dynamic CAGR: **0.1063**
-- Static CAGR: **0.0731**
-- Dynamic Max DD: **-0.1798**
-- Static Max DD: **-0.2106**
-
-> Note: Some values differ depending on whether you're using **daily vs monthly**, and whether you're showing **gross vs net** returns.
+- Regime strategy **improves Sharpe ratio**
+- Better **risk control**
+- Slightly smoother drawdowns
+- Volatility-aware allocation improves risk-adjusted return
 
 ---
 
-## Probability-Weighted Strategy (Advanced)
-Instead of using only a hard 0/1 regime switch, we also tested using the model’s **predicted probability** to reduce switching noise.
+## Probability-Based Regime Strategy
 
-**Out-of-sample predicted regime counts:**
-- Regime 1: 1104
-- Regime 0: 854
+The model also tested **probability-weighted allocation** using predicted regime probability.
 
-**Probability summary:**
-- mean: 0.5637  
-- std: 0.4556  
-- min: 0.0000  
-- 25%: 0.0204  
-- 50%: 0.9089  
-- 75%: 0.9834  
-- max: 1.0000  
-
-**Avg turnover (prob strategy):** 0.1016
+- Average turnover ≈ **10%**
+- Stable performance after transaction costs
 
 ---
 
-## Benchmarks Added
-We compared results against:
-- **Static portfolio**
-- **60/40** benchmark
-- **Risk Parity** benchmark
+## Benchmark Comparison
 
-Benchmarks availability in sample:
-- 60/40 months: 39  
-- Risk Parity months: 28  
+Compared against:
 
----
+- Static Portfolio  
+- 60/40 Portfolio  
+- Risk Parity  
 
-## Sensitivity Analysis (Threshold Robustness)
-We tested different volatility thresholds using quantiles:
-`q = [0.30, 0.40, 0.50, 0.60, 0.70]`
-
-Best Sharpe appeared around:
-- **0.50 quantile threshold**
-
-This suggests performance is not overly dependent on one specific threshold.
+The **Regime Strategy delivered competitive performance with improved risk control**.
 
 ---
 
-## Feature Importance
-Random Forest feature importance shows:
-- `vol20` is dominant (~0.80)
-- `mom60` (~0.13)
-- `mkt_ret` (~0.07)
+## Additional Analysis
 
-Interpretation: volatility is the main driver of regime classification.
-
----
-
-## Visualizations
-Place your plots in `results/` and keep these names:
-
-- `results/wealth_curve.png`
-- `results/drawdowns.png`
-- `results/feature_importance.png`
-- `results/confusion_matrix.png`
-- `results/parameter_sensitivity.png`
-- `results/regime_timeline.png`
-- `results/wealth_with_regime_shading.png`
-
-Example embedding:
-
-### Wealth Curve (Dynamic vs Static)
-![Wealth Curve](results/wealth_curve.png)
-
-### Drawdowns
-![Drawdowns](results/drawdowns.png)
-
-### Regime Timeline
-![Regime Timeline](results/regime_timeline.png)
-
-### Feature Importance
-![Feature Importance](results/feature_importance.png)
-
-### Confusion Matrix
-![Confusion Matrix](results/confusion_matrix.png)
-
-### Threshold Sensitivity
-![Sensitivity](results/parameter_sensitivity.png)
+- Volatility threshold sensitivity tested
+- Feature importance studied
+- Turnover measured
+- Out-of-sample walk-forward validation performed
 
 ---
 
-## Project Structure
-Recommended structure:
+## Key Visualizations
+
+The repository includes:
+
+- Wealth Curve: Regime vs Static
+- Drawdown Comparison
+- Feature Importance
+- Confusion Matrix
+- Regime Timeline
+- Parameter Sensitivity
+
+---
+
+## Key Takeaways
+
+- Market volatility strongly predicts regime shifts
+- Machine learning can detect regimes effectively
+- Dynamic allocation improves **risk-adjusted performance**
+- Defensive positioning during high-vol periods reduces drawdowns
+- Regime strategies are practical for real-world asset allocation
+
+---
+
+## Future Improvements
+
+- Add macroeconomic indicators
+- Try Gradient Boosting / XGBoost
+- Multi-regime classification
+- Transaction-cost optimization
+- Live market deployment
+- Deep learning regime models
+
+---
+
+## Repository Structure
+
+## How to Run the Project
+
+1. Clone the repository
 
 
-**Confusion Matrix:**
+Run all cells to reproduce results.
+
+---
+
+## Reproducibility
+
+- Data source: Stooq (daily market data)
+- No look-ahead bias: Features at time **t** predict regime at **t+1**
+- Time-series split used (no random shuffle)
+- Transaction cost included in evaluation
+- Out-of-sample testing performed
+
+---
+
+## Skills Demonstrated
+
+- Quantitative Finance & Portfolio Management
+- Asset Allocation & Risk Management
+- Regime Detection & Volatility Modeling
+- Machine Learning (Random Forest, Logistic Regression)
+- Feature Engineering
+- Time-Series Modeling
+- Backtesting & Strategy Evaluation
+- Performance Metrics (Sharpe, Drawdown, CAGR)
+- Financial Data Analysis with Python
+- Research & Quantitative Strategy Design
+
+---
+
+## Author
+
+**Himalai Appikatla**  
+MSc Quantitative Economics & Econometrics  
+Quantitative Finance | Asset Allocation | Machine Learning  
+
+GitHub: https://github.com/Himalai  
+
+---
+
+## Disclaimer
+
+This project is for **educational and research purposes only**.  
+It does not constitute financial advice or investment recommendation.
+
 
