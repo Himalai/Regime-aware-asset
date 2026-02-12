@@ -1,4 +1,4 @@
-# 📊 Regime-Based Dynamic Asset Allocation (ML-Driven)
+# Regime-Based Dynamic Asset Allocation (ML-Driven)
 
 ## Overview
 This project builds a **machine learning–driven market regime detection system** and uses it to dynamically allocate assets between equities, bonds, gold, and real estate.
