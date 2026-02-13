@@ -173,15 +173,39 @@ The repository includes:
 
 ---
 
-## Key Takeaways
+## Results Summary
 
-- Market volatility strongly predicts regime shifts
-- Machine learning can detect regimes effectively
-- Dynamic allocation improves **risk-adjusted performance**
-- Defensive positioning during high-vol periods reduces drawdowns
-- Regime strategies are practical for real-world asset allocation
+**Dataset:** Daily market data (2015–2026)  
+**Model:** Random Forest Regime Classifier  
+**Evaluation:** Out-of-sample, time-series split  
+
+### Model Accuracy
+
+- Classification Accuracy: **~95%**
+- Strong separation between Low-Vol and High-Vol regimes
+- Volatility is the dominant predictive feature
+
+### Key Insights
+
+- Dynamic allocation **improves risk-adjusted return**
+- Defensive positioning during high-volatility reduces downside risk
+- Machine learning successfully identifies regime shifts
+- Strategy remains stable after transaction costs
+- Low turnover (~10%) makes strategy practical
 
 ---
+
+## Project Summary
+
+**Regime-Aware Asset Allocation using Machine Learning**
+
+Developed a machine learning-based dynamic portfolio strategy that adjusts asset allocation based on predicted market volatility regimes. Built a Random Forest classifier using volatility and momentum features to forecast future regimes and dynamically rebalance a multi-asset portfolio. Conducted out-of-sample backtesting with transaction costs and benchmark comparison. The strategy improved Sharpe ratio and risk control compared to static allocation, demonstrating practical application of machine learning in quantitative asset management.
+
+
+## Project Significance
+
+This project demonstrates how **machine learning can be applied to real-world portfolio management problems**, combining quantitative finance theory with data-driven regime prediction to improve portfolio risk-adjusted performance. The framework can be extended to multi-factor, macro-driven, or live trading systems.
+
 
 ## Future Improvements
 
